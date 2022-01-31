@@ -150,9 +150,9 @@ jobs:
         # https://github.com/msys2/MSYS2-packages/issues/2343#issuecomment-977221453
         stack exec ${ARGS} -- curl -O https://repo.msys2.org/msys/x86_64/msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz
         stack exec ${ARGS} -- curl -O https://repo.msys2.org/msys/x86_64/msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz.sig
-        stack exec ${ARGS} -- pacman-key --verify msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz.sig
+        stack exec ${ARGS} -- C:/msys64/usr/bin/pacman-key --verify msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz.sig
         stack exec ${ARGS} -- pacman -U msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz
-        stack exec ${ARGS} -- pacman-key --keyserver keyserver.ubuntu.com --refresh-keys
+        stack exec ${ARGS} -- C:/msys64/usr/bin/pacman-key --keyserver keyserver.ubuntu.com --refresh-keys
         stack exec ${ARGS} -- pacman -S --noconfirm ${ICU}
 
     - name: Install the numa library (Ubuntu, GHC 8.4.4)
