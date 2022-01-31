@@ -92,7 +92,7 @@ jobs:
     - with:
         path: ${{ steps.haskell-setup.outputs.stack-root }}
         key: |
-          ${{ runner.os }}-stack-02-${{ env.STACK_VER }}-${{ hashFiles(format('stack-{0}.yaml.lock', env.GHC_VER)) }}
+          ${{ runner.os }}-stack-01-${{ env.STACK_VER }}-${{ hashFiles(format('stack-{0}.yaml.lock', env.GHC_VER)) }}
       uses: actions/cache@v2
       name: Cache dependencies
       id: cache
@@ -105,6 +105,12 @@ jobs:
       run: |
         # stack exec ${ARGS} -- wget -q http://repo.msys2.org/mingw/x86_64/${ICU_FILE}
         # stack exec ${ARGS} -- pacman -U --noconfirm ${ICU_FILE}
+        # https://github.com/msys2/MSYS2-packages/issues/2343#issuecomment-977221453
+        stack exec ${ARGS} -- curl -O https://repo.msys2.org/msys/x86_64/msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz
+        stack exec ${ARGS} -- curl -O https://repo.msys2.org/msys/x86_64/msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz.sig
+        stack exec ${ARGS} -- pacman-key --verify msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz.sig
+        stack exec ${ARGS} -- pacman -U msys2-keyring-r21.b39fb11-1-any.pkg.tar.xz
+        stack exec ${ARGS} -- pacman-key --keyserver keyserver.ubuntu.com --refresh-keys
         stack exec ${ARGS} -- pacman -S --noconfirm ${ICU}
       name: Install the icu library (Windows)
     - if: ${{ runner.os == 'Linux' && env.GHC_VER == '8.4.4' }}
