@@ -48,7 +48,7 @@ jobs:
           - os: macos-latest
             ghc-ver: 9.2.1
             stack-ver: latest
-          - os: windows-latest
+          - os: windows-2022
             ghc-ver: 9.0.1
             stack-ver: latest
     # Andreas, 2021-11-19, re #5649
