@@ -886,6 +886,18 @@ axiomName (Axiom _ _ _ _ q _)  = q
 axiomName (ScopedDecl _ (d:_)) = axiomName d
 axiomName _                    = __IMPOSSIBLE__
 
+declName :: Declaration -> Maybe QName
+declName (Axiom _ _ _ _ q _)                = Just q
+declName (Generalize _ _ _ q _)             = Just q
+declName (Field _ q _)                      = Just q
+declName (Primitive _ q _)                  = Just q
+declName (FunDef _ q _ _)                   = Just q
+declName (DataSig _ q _ _)                  = Just q
+declName (DataDef _ q _ _ _)                = Just q
+declName (RecSig _ q _ _)                   = Just q
+declName (RecDef _ q _ _ _ _ _)             = Just q
+declName _ = Nothing
+
 -- | Are we in an abstract block?
 --
 --   In that case some definition is abstract.

@@ -90,6 +90,7 @@ import {-# SOURCE #-} Agda.Interaction.Response
   (InteractionOutputCallback, defaultInteractionOutputCallback)
 import Agda.Interaction.Highlighting.Precise
   (HighlightingInfo, NameKind)
+import qualified Agda.Interaction.Highlighting.Range as HR
 import Agda.Interaction.Library
 
 import Agda.Utils.Benchmark (MonadBench(..))
@@ -224,6 +225,8 @@ type ConcreteNames = Map Name [C.Name]
 data PostScopeState = PostScopeState
   { stPostSyntaxInfo          :: !HighlightingInfo
     -- ^ Highlighting info.
+  , stPostDeclRanges          :: !(Map QName HR.Range)
+    -- ^ Highlight info for decls
   , stPostDisambiguatedNames  :: !DisambiguatedNames
     -- ^ Disambiguation carried out by the type checker.
     --   Maps position of first name character to disambiguated @'A.QName'@
@@ -410,6 +413,7 @@ initPreScopeState = PreScopeState
 initPostScopeState :: PostScopeState
 initPostScopeState = PostScopeState
   { stPostSyntaxInfo           = mempty
+  , stPostDeclRanges           = Map.empty
   , stPostDisambiguatedNames   = IntMap.empty
   , stPostOpenMetaStore        = Map.empty
   , stPostSolvedMetaStore      = Map.empty
@@ -594,6 +598,11 @@ stSyntaxInfo :: Lens' HighlightingInfo TCState
 stSyntaxInfo f s =
   f (stPostSyntaxInfo (stPostScopeState s)) <&>
   \x -> s {stPostScopeState = (stPostScopeState s) {stPostSyntaxInfo = x}}
+
+stDeclRanges :: Lens' (Map QName HR.Range) TCState
+stDeclRanges f s =
+  f (stPostDeclRanges (stPostScopeState s)) <&>
+  \x -> s {stPostScopeState = (stPostScopeState s) {stPostDeclRanges = x}}
 
 stDisambiguatedNames :: Lens' DisambiguatedNames TCState
 stDisambiguatedNames f s =
@@ -995,6 +1004,7 @@ data Interface = Interface
   , iBuiltin         :: BuiltinThings (String, QName)
   , iForeignCode     :: Map BackendName [ForeignCode]
   , iHighlighting    :: HighlightingInfo
+  , iDeclRanges      :: Map QName HR.Range
   , iDefaultPragmaOptions :: [OptionsPragma]
     -- ^ Pragma options set in library files.
   , iFilePragmaOptions    :: [OptionsPragma]
@@ -1012,7 +1022,7 @@ instance Pretty Interface where
   pretty (Interface
             sourceH source fileT importedM moduleN scope insideS signature
             metas display userwarn importwarn builtin foreignCode
-            highlighting libPragmaO filePragmaO oUsed patternS warnings
+            highlighting declRanges libPragmaO filePragmaO oUsed patternS warnings
             partialdefs) =
 
     hang "Interface" 2 $ vcat
@@ -1031,6 +1041,7 @@ instance Pretty Interface where
       , "builtin:"             <+> (pretty . show) builtin
       , "Foreign code:"        <+> (pretty . show) foreignCode
       , "highlighting:"        <+> (pretty . show) highlighting
+      , "decl ranges"          <+> (pretty . show) declRanges
       , "library pragma options:" <+> (pretty . show) libPragmaO
       , "file pragma options:" <+> (pretty . show) filePragmaO
       , "options used:"        <+> (pretty . show) oUsed

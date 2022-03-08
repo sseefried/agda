@@ -42,6 +42,7 @@ data HtmlFlags = HtmlFlags
   , htmlFlagHighlight            :: HtmlHighlight
   , htmlFlagHighlightOccurrences :: Bool
   , htmlFlagCssFile              :: Maybe FilePath
+  , htmlFlagDefStdout            :: Maybe String
   } deriving (Eq, Generic)
 
 instance NFData HtmlFlags
@@ -88,6 +89,7 @@ initialHtmlFlags = HtmlFlags
   -- performance problems
   , htmlFlagHighlightOccurrences = False
   , htmlFlagCssFile              = Nothing
+  , htmlFlagDefStdout            = Nothing
   }
 
 htmlOptsOfFlags :: HtmlFlags -> HtmlOptions
@@ -119,6 +121,9 @@ htmlFlags =
                     ("whether to highlight only the code parts (code) or " ++
                      "the file as a whole (all) or " ++
                      "decide by source file type (auto)")
+    , Option []     ["def-stdout"] (ReqArg defStdoutFlag "DECLNAME")
+                    ("Output the HTML generated for the definition with " ++
+                     "DECLNAME to standard output")
     ]
 
 htmlFlag :: Flag HtmlFlags
@@ -129,6 +134,9 @@ htmlDirFlag d o = return $ o { htmlFlagDir = d }
 
 cssFlag :: FilePath -> Flag HtmlFlags
 cssFlag f o = return $ o { htmlFlagCssFile = Just f }
+
+defStdoutFlag :: String -> Flag HtmlFlags
+defStdoutFlag declName o = return $ o { htmlFlagDefStdout = Just declName }
 
 highlightOccurrencesFlag :: Flag HtmlFlags
 highlightOccurrencesFlag o = return $ o { htmlFlagHighlightOccurrences = True }

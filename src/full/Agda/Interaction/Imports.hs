@@ -1203,6 +1203,7 @@ buildInterface src topLevel = do
     userwarns   <- useTC stLocalUserWarnings
     importwarn  <- useTC stWarningOnImport
     syntaxInfo  <- useTC stSyntaxInfo
+    declRanges  <- useTC stDeclRanges
     optionsUsed <- useTC stPragmaOptions
     partialDefs <- useTC stLocalPartialDefs
 
@@ -1228,6 +1229,7 @@ buildInterface src topLevel = do
           , iBuiltin         = builtin'
           , iForeignCode     = foreignCode
           , iHighlighting    = syntaxInfo
+          , iDeclRanges      = declRanges
           , iDefaultPragmaOptions = defPragmas
           , iFilePragmaOptions    = filePragmas
           , iOptionsUsed     = optionsUsed

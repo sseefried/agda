@@ -67,6 +67,14 @@ import Agda.Utils.Pretty
 
 import Agda.Utils.Impossible
 
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Agda.Syntax.Abstract.Name (QName)
+import qualified Agda.Utils.RangeMap as RM
+import           Agda.Interaction.Highlighting.Range (Range(..))
+import qualified Agda.Interaction.Highlighting.Range as Range
+import           Debug.Trace
+
 -- | The Agda data directory containing the files for the HTML backend.
 
 htmlDataDir :: FilePath
@@ -142,6 +150,8 @@ data HtmlInputSourceFile = HtmlInputSourceFile
   -- ^ Source file type
   , _srcFileText :: Text
   -- ^ Source text
+  , _srcDeclRanges :: Map QName Range
+  -- ^ Character range for declarations
   , _srcFileHighlightInfo :: HighlightingInfo
   -- ^ Highlighting info
   }
@@ -149,7 +159,7 @@ data HtmlInputSourceFile = HtmlInputSourceFile
 -- | Bundle up the highlighting info for a source file
 
 srcFileOfInterface :: C.TopLevelModuleName -> TCM.Interface -> HtmlInputSourceFile
-srcFileOfInterface m i = HtmlInputSourceFile m (TCM.iFileType i) (TCM.iSource i) (TCM.iHighlighting i)
+srcFileOfInterface m i = HtmlInputSourceFile m (TCM.iFileType i) (TCM.iSource i) (TCM.iDeclRanges i) (TCM.iHighlighting i)
 
 -- | Logging during HTML generation
 
@@ -175,15 +185,17 @@ renderSourceFile opts = renderSourcePage
   cssFile = fromMaybe defaultCSSFile (htmlOptCssFile opts)
   highlightOccur = htmlOptHighlightOccurrences opts
   htmlHighlight = htmlOptHighlight opts
-  renderSourcePage (HtmlInputSourceFile moduleName fileType sourceCode hinfo) =
-    page cssFile highlightOccur onlyCode moduleName pageContents
+  renderSourcePage (HtmlInputSourceFile moduleName fileType sourceCode declRanges hinfo) =
+    traceShow (declRangesMapToHtmlMap tokens declRanges) $
+      page cssFile highlightOccur onlyCode moduleName pageContents
     where
       tokens = tokenStream sourceCode hinfo
       onlyCode = highlightOnlyCode htmlHighlight fileType
       pageContents = code onlyCode fileType tokens
+--      pageContents = code onlyCode fileType (filter (\(_,s,_) -> s == "swap") tokens)
 
 defaultPageGen :: (MonadIO m, MonadLogHtml m) => HtmlOptions -> HtmlInputSourceFile -> m ()
-defaultPageGen opts srcFile@(HtmlInputSourceFile moduleName ft _ _) = do
+defaultPageGen opts srcFile@(HtmlInputSourceFile moduleName ft _ _ _) = do
   logHtml $ render $ "Generating HTML for"  <+> pretty moduleName <+> ((parens (pretty target)) <> ".")
   writeRenderedHtml html target
   where
@@ -273,8 +285,15 @@ type TokenInfo =
   , Aspects
   )
 
--- | Constructs token stream ready to print.
+declRangesMapToHtmlMap :: [TokenInfo] -> Map QName Range -> Map String Text
+declRangesMapToHtmlMap tokenStream =
+    Map.mapKeys prettyShow .
+      Map.map (\r -> renderHtml $ code False AgdaFileType (filter (inRange r) tokenStream))
+  where
+    inRange :: Range -> TokenInfo -> Bool
+    inRange range (pos, _, _) = pos >= Range.from range && pos <= Range.to range
 
+-- | Constructs token stream ready to print.
 tokenStream
      :: Text             -- ^ The contents of the module.
      -> HighlightingInfo -- ^ Highlighting information.
@@ -314,7 +333,7 @@ code onlyCode fileType = mconcat . if onlyCode
   splitByMarkup = splitWhen $ (== Just Markup) . aspect . trd
 
   mkHtml :: TokenInfo -> Html
-  mkHtml (pos, s, mi) =
+  mkHtml tokInfo@(pos, s, mi) =
     -- Andreas, 2017-06-16, issue #2605:
     -- Do not create anchors for whitespace.
     applyUnless (mi == mempty) (annotate pos mi) $ toHtml s

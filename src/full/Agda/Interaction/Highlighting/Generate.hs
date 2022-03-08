@@ -77,6 +77,7 @@ import Agda.Utils.Maybe
 import qualified Agda.Utils.Maybe.Strict as Strict
 import Agda.Utils.Null
 import Agda.Utils.Pretty
+import qualified Agda.Utils.RangeMap as RM
 import Agda.Utils.Singleton
 
 import Agda.Utils.Impossible
@@ -152,6 +153,13 @@ generateAndPrintSyntaxInfo decl hlLevel updateState = do
 
     -- Main source of scope-checker generated highlighting:
     let nameInfo = runHighlighter modMap file kinds decl
+        mbDeclRange = do
+          qname <- A.declName decl
+          range <- coveringRange nameInfo
+          return (qname, range)
+        declRange = case mbDeclRange of
+          Just (qname, range) -> Map.singleton qname range
+          Nothing             -> Map.empty
 
     reportSDoc "highlighting.warning" 60 $ TCM.hcat
       [ "current path = "
@@ -174,6 +182,7 @@ generateAndPrintSyntaxInfo decl hlLevel updateState = do
 
     when updateState $ do
       stSyntaxInfo `modifyTCLens` mappend syntaxInfo
+      stDeclRanges `modifyTCLens` mappend declRange
       stTokens     `setTCLens`    otherTokens
 
     ifTopLevelAndHighlightingLevelIs NonInteractive $
